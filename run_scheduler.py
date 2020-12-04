@@ -7,24 +7,25 @@ import time
 import pickle
 import re
 import sys
+import run_file_utils
+
 
 class RunScheduler:
 
     def __init__(
             self,
-            xid: str,
-            machine_addresses: List[str],
-            username: str,
-            data_dir: str,
-            experiment_base_dir: str,
-            venv_name: str
+            run_file: str,
     ):
-        self._xid = xid
-        self._machine_addresses = machine_addresses
-        self._experiment_base_dir = experiment_base_dir
-        self._data_dir = data_dir
-        self._venv_name = venv_name
-        self._username = username
+        with open(run_file, 'rb') as f:
+            run_file_data = pickle.load(f)
+        self._run_file = run_file
+        self._xid = run_file_data['xid']
+        self._machine_addresses = run_file_data['machine_addresses']
+        self._experiment_base_dir = run_file_data['experiment_base_dir']
+        self._data_dir = run_file_data['data_dir']
+        self._venv_name = run_file_data['venv_name']
+        self._username = run_file_data['username']
+
         self._blocking_machines = set()
         self._current_machine = self._machine_addresses[0]
         self._machine_clients = {addr: self._connect_to_machine(addr)
@@ -72,26 +73,6 @@ class RunScheduler:
         if not wait_for_finish:
             return None
         return all_run_data
-
-    def _peek_run_file(self, run_file: str) -> Optional[Run]:
-        with open(run_file, 'rb') as f:
-            runs: List[Run] = pickle.load(f)
-        if len(runs) == 0:
-            return None
-        head, *tail = runs
-        #with open(run_file, 'wb') as f:
-        #    pickle.dump(tail, f)
-        return head
-
-    def _pop_run_file(self, run_file: str) -> Optional[Run]:
-        with open(run_file, 'rb') as f:
-            runs: List[Run] = pickle.load(f)
-        if len(runs) == 0:
-            return None
-        head, *tail = runs
-        with open(run_file, 'wb') as f:
-            pickle.dump(tail, f)
-        return head
 
     def _place_on_gpu(self, addr: str, monitor_data: Dict[str, Any], required_gpu_ram: int) -> int:
         resources = monitor_data[addr]
@@ -155,9 +136,8 @@ class RunScheduler:
 
     def run(
             self,
-            run_file: str,
             wait_time: float = 5):
-        run = self._peek_run_file(run_file)
+        run = run_file_utils.peek(self._run_file)
         while run is not None:
             ready_opt = self._find_ready_machine(run)
             if ready_opt is None:
@@ -165,25 +145,15 @@ class RunScheduler:
             else:
                 (addr, gpu) = ready_opt
                 self._launch_run(addr, run, gpu)
-                self._pop_run_file(run_file)
+                run_file_utils.pop(self._run_file)
                 time.sleep(wait_time)
-                run = self._peek_run_file(run_file)
+                run = run_file_utils.peek(self._run_file)
 
 
 if __name__ == '__main__':
+    # when a run_file is created, and xid should be assigned.
     run_file = sys.argv[1]
-    # need a way of getting a temp xid (maybe bundle this in a run file.
-    xid = None
-    # is there a system specific way of getting a list of machine addresses?
-    
-    sched = RunScheduler(
-        xid=None,
-        machine_addresses=None,
-        username=None,
-        data_dir=None,
-        experiment_base_dir=None,
-        venv_name=None,
-    )
+    sched = RunScheduler(run_file)
     sched.run()
 
 
