@@ -58,7 +58,7 @@ class RunScheduler:
             wait_for_finish: bool = True
     ) -> Union[Dict[str, Any], None]:
         # Assumes scheduler has its own venv that it can safely launch executables from.
-        command = ('source ~/scheduler/scheduler/bin/activate; ' 
+        command = ('source ~/scheduler/venv/bin/activate; ' 
                    f'python -m scheduler.{remote_exec}' + ' '.join(args))
         all_run_data = dict()
         for addr, client in self._machine_clients.items():

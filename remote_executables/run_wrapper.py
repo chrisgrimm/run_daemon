@@ -85,10 +85,8 @@ class RunWrapper:
     def _run_experiment(self, run_path: str):
         venv_path = os.path.join(self._experiment_base_dir, self._venv_name)
         venv_command = f'source {venv_path}/bin/activate'
-        extra_commands = f'--run-dir={run_path}'
         python_command = (f'python {os.path.join(self._experiment_base_dir, self._experiment_file)} '
-                          f'{self._experiment_arg_string} ' 
-                          f'{extra_commands} ')
+                          f'{self._experiment_arg_string} ')
         env_vars = ' '.join(self._environ_vars)
         full_command = f'{env_vars} {venv_command}; {python_command}'
         out_file = os.path.join(run_path, 'stdout.txt')
