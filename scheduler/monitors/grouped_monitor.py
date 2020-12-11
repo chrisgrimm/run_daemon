@@ -1,4 +1,4 @@
-from monitors import monitor
+from scheduler.monitors import monitor
 from typing import List, Mapping
 
 class GroupedMonitor(monitor.Monitor):

@@ -1,6 +1,5 @@
 from typing import Mapping
-import subprocess
-from monitors import monitor
+from scheduler.monitors import monitor
 import nvgpu
 
 

@@ -1,7 +1,7 @@
 import subprocess
 import re
 from typing import List, Mapping, Tuple
-from monitors import monitor
+from scheduler.monitors import monitor
 
 class DStatMonitor(monitor.Monitor):
 

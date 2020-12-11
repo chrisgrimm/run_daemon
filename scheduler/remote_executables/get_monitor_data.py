@@ -1,5 +1,6 @@
 import pickle
-from monitors import dstat_monitor, gpu_monitor, grouped_monitor
+from scheduler.monitors import dstat_monitor
+from scheduler.monitors import gpu_monitor, grouped_monitor
 
 if __name__ == '__main__':
     monitor = grouped_monitor.GroupedMonitor([
