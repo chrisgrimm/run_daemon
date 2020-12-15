@@ -1,7 +1,7 @@
 dict(
     experiment_params=dict(
         pythonpath='.',
-        experiment_file='test_run.py'
+        experiment_file='test_run.py',
         experiment_base_dir='scheduler/',
         shared_data_dir='/shared/home/crgrimm/',
 
