@@ -5,7 +5,6 @@ dict(
         experiment_base_dir='scheduler/',
         shared_data_dir='/shared/home/crgrimm/',
 
-        pythonpath='.',
         venv_name='venv',
         username='crgrimm',
 
