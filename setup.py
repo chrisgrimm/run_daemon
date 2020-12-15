@@ -2,7 +2,7 @@ import setuptools
 
 
 setuptools.setup(
-    name="crgrimm", # Replace with your own username
+    name="crgrimm-scheduler", # Replace with your own username
     version="1.0.0",
     author="Christopher Grimm",
     author_email="crgrimm@umich.edu",
