@@ -72,9 +72,11 @@ class RunScheduler:
     def _get_blocking_machines(self) -> Set[str]:
         run_data = self._execute_across_machines('get_xid_info', self._data_dir, self._xid)
         blocking_machines = set()
-        for machine_addr, machine_runs_data in run_data.items():
+        for _, machine_runs_data in run_data.items():
             for run_num, run_data in machine_runs_data.items():
                 if not run_data['spun_up']:
+                    hostname = run_data['hostname']
+                    machine_addr = f'{hostname}.eecs.umich.edu'
                     blocking_machines.add(machine_addr)
                     break
         return blocking_machines

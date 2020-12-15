@@ -3,6 +3,7 @@ import os
 import subprocess
 from typing import List
 import sys
+from experiment_suite.scheduler import utils as sched_utils
 
 '''
 ./data_dir
@@ -12,6 +13,7 @@ import sys
 -- -- data.pickle : data returned at the end of the process
 -- -- progress.txt : text file containing a single number representing progress, -1 for failure.
 -- -- spun_up.txt : file with a bit telling indicating whether a job has started using the bulk of its resources.
+-- -- host.txt : file the address of the running machine on it.
 -- -- stream_data/
 -- -- -- loss1.txt : text file containing floats accumulated throughout a run.
 -- -- -- loss2.txt : text file containing floats accumulated throughout a run.
@@ -68,6 +70,8 @@ class RunWrapper:
             pass
         with open(os.path.join(run_dir, 'spun_up.txt'), 'w') as f:
             f.write(str(0))
+        with open(os.path.join(run_dir, 'host.txt'), 'w') as f:
+            f.write(sched_utils.get_hostname())
         os.mkdir(os.path.join(run_dir, 'stream_data'))
 
     def _get_or_create_tmux_window(self):

@@ -9,9 +9,12 @@ def get_info(run_path: str) -> Mapping[str, Any]:
         progress = float(f.read())
     with open(os.path.join(run_path, 'spun_up.txt'), 'r') as f:
         is_spun_up = bool(int(f.read()))
+    with open(os.path.join(run_path, 'host.txt'), 'r') as f:
+        hostname = f.read().strip()
     return {
         'progress': progress,
-        'spun_up': is_spun_up
+        'spun_up': is_spun_up,
+        'hostname': hostname,
     }
 
 

@@ -2,6 +2,8 @@ import socket
 from contextlib import closing
 from dataclasses import dataclass
 from typing import Optional
+import os
+
 
 @dataclass
 class Run:
@@ -16,3 +18,9 @@ class Run:
     experiment_file: str
     experiment_arg_string: str
     experiment_environ_vars: str
+
+
+def get_hostname() -> str:
+    with open('/etc/hostname', 'r') as f:
+        return f.read().strip()
+

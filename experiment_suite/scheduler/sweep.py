@@ -93,14 +93,15 @@ def build_run_file(
         pythonpath: str,
         experiment_file: str,
 ) -> str:
+    xid = int(time.time())
     run_file_data = {
         'machine_addresses': machine_addresses,
         'experiment_base_dir': experiment_base_dir,
         'data_dir': shared_data_dir,
         'venv_name': venv_name,
-        'username': username
+        'username': username,
+        'xid': xid,
     }
-    xid = int(time.time())
     # set up data directory for experiment.
     experiment_data_dir = os.path.join(shared_data_dir, str(xid))
     if os.path.isdir(experiment_data_dir):
