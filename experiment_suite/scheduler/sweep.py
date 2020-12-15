@@ -129,7 +129,7 @@ def build_run_file(
             experiment_arg_string=kwargs_to_str(kwargs),
             experiment_environ_vars='',
         )
-        runs.append(run)
+        runs.append((False, run))
     run_file_data['runs'] = runs
     with open(run_file_path, 'wb') as f:
         pickle.dump(run_file_data, f)
