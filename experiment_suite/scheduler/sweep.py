@@ -4,7 +4,7 @@ from experiment_suite.scheduler.utils import Run
 import time
 import os
 import pickle
-
+import sys
 
 T = TypeVar('T')
 Primitive = Union[int, str, bool, float]
@@ -92,7 +92,7 @@ def build_run_file(
         required_gpu_ram: Optional[int],
         pythonpath: str,
         experiment_file: str,
-) -> None:
+) -> str:
     run_file_data = {
         'machine_addresses': machine_addresses,
         'experiment_base_dir': experiment_base_dir,
@@ -132,11 +132,12 @@ def build_run_file(
     run_file_data['runs'] = runs
     with open(run_file_path, 'wb') as f:
         pickle.dump(run_file_data, f)
+    return run_file_path
 
 
 def build_run_file_from_sweep_file(
         sweep_file_path: str
-):
+) -> str:
     with open(sweep_file_path, 'r') as f:
         txt = f.read()
     experiment_data = eval(txt)
@@ -144,7 +145,7 @@ def build_run_file_from_sweep_file(
     sweep = Sweep()
     for sweep_command in experiment_data['sweep']:
         eval("sweep." + sweep_command)
-    build_run_file(
+    return build_run_file(
         sweep,
         machine_addresses=p['machine_addresses'],
         experiment_base_dir=p['experiment_base_dir'],
@@ -156,3 +157,7 @@ def build_run_file_from_sweep_file(
         pythonpath=p['pythonpath'],
         experiment_file=p['experiment_file']
     )
+
+if __name__ == '__main__':
+    run_file_path = build_run_file_from_sweep_file(sys.argv[1])
+    print(run_file_path)
