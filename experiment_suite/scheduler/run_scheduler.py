@@ -1,12 +1,38 @@
-from typing import Dict, Any, Set, Tuple, Optional, Callable, Union
+from typing import Dict, Any, Set, Tuple, Optional, Callable, Union, IO
 from experiment_suite.scheduler.utils import Run
 import paramiko
 import itertools
 import time
 import pickle
 import re
+import os
 import sys
+import subprocess
+
 from experiment_suite.scheduler import run_file_utils
+
+class ClientWrapper:
+
+    def exec_command(self, command: str) -> Tuple[IO, IO, IO]:
+        raise NotImplementedError
+
+
+class ParamikoClient(ClientWrapper):
+
+    def __init__(self, client: paramiko.SSHClient):
+        self._client = client
+
+    def exec_command(self, command: str) -> Tuple[IO, IO, IO]:
+        return self._client.exec_command(command)
+
+
+class LocalClient(ClientWrapper):
+
+    def exec_command(self, command: str) -> Tuple[IO, IO, IO]:
+        p = subprocess.Popen(command, shell=True)
+        return p.stdin, p.stdout, p.stderr
+
+
 
 
 class RunScheduler:
@@ -31,12 +57,16 @@ class RunScheduler:
                                  for addr in self._machine_addresses}
         self._machine_cycle = itertools.cycle(self._machine_addresses)
 
-    def _connect_to_machine(self, machine_address: str) -> paramiko.SSHClient:
-        client = paramiko.SSHClient()
-        client.load_system_host_keys()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(hostname=machine_address,
-                       username=self._username)
+    def _connect_to_machine(self, machine_address: str) -> ClientWrapper:
+        if self._is_own_address(machine_address):
+            client = LocalClient()
+        else:
+            client = paramiko.SSHClient()
+            client.load_system_host_keys()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            client.connect(hostname=machine_address,
+                           username=self._username)
+            client = ParamikoClient(client)
         return client
 
     def _get_blocking_machines(self) -> Set[str]:
@@ -48,6 +78,18 @@ class RunScheduler:
                     blocking_machines.add(machine_addr)
                     break
         return blocking_machines
+
+    # TODO figure out a way to make this non-michigan specific
+    def _is_own_address(self, address: str) -> bool:
+        match = re.match(r'^(.+?)\.eecs\.umich\.edu$', address)
+        if match is None:
+            raise Exception(f'Got non-umich address {address}.')
+        (machine_name,) = match.groups()
+        if not os.path.isfile('/etc/hostname'):
+            raise Exception('Could not find local machine\'s hostname.')
+        with open('/etc/hostname', 'r') as f:
+            own_machine_name = f.read().strip()
+        return own_machine_name == machine_name
 
     def _execute_across_machines(
             self,
@@ -140,6 +182,7 @@ class RunScheduler:
         while run is not None:
             ready_opt = self._find_ready_machine(run)
             if ready_opt is None:
+                print('No Ready Machines... waiting.')
                 time.sleep(wait_time)
             else:
                 (addr, gpu) = ready_opt
