@@ -48,7 +48,7 @@ class RunWrapper:
         self._run_experiment(run_dir)
 
     def _process_environ_vars(self, environ_vars: str) -> List[str]:
-        return ",".split(environ_vars)
+        return environ_vars.split(',')
 
 
     def _create_run_directory(self):
@@ -81,13 +81,14 @@ class RunWrapper:
                           f'{self._experiment_arg_string} ')
         env_vars = ' '.join(self._environ_vars)
         full_command = f'{env_vars} {venv_command}; {python_command}'
+
         out_file = os.path.join(run_path, 'stdout.txt')
         err_file = os.path.join(run_path, 'stderr.txt')
         stdout, stderr = None, None
         try:
             stdout = open(out_file, 'w')
             stderr = open(err_file, 'w')
-            p = subprocess.Popen(full_command, shell=True, stdout=stdout, stderr=stderr)
+            p = subprocess.Popen(full_command, shell=True, stdout=stdout, stderr=stderr, executable='/bin/bash')
             retcode = p.wait()
             # if the program fails write -1 to the progress logger.
             if retcode != 0:
@@ -96,6 +97,8 @@ class RunWrapper:
             else:
                 with open(os.path.join(run_path, 'progress.txt'), 'w') as f:
                     f.write(str(1))
+            with open(os.path.join(run_path, 'spun_up.txt'), 'w') as f:
+                f.write(str(1))
         finally:
             if stdout is not None:
                 stdout.close()
