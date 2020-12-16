@@ -33,7 +33,8 @@ class LocalClient(ClientWrapper):
                              shell=True,
                              stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+                             stderr=subprocess.PIPE,
+                             executable='/bin/bash')
         return p.stdin, p.stdout, p.stderr
 
 
@@ -74,7 +75,7 @@ class RunScheduler:
         return client
 
     def _get_blocking_machines(self) -> Set[str]:
-        run_data = self._execute_across_machines('get_xid_info', self._data_dir, self._xid)
+        run_data = self._execute_across_machines('get_xid_info', self._data_dir, str(self._xid))
         blocking_machines = set()
         for _, machine_runs_data in run_data.items():
             for run_num, run_data in machine_runs_data.items():
@@ -106,7 +107,7 @@ class RunScheduler:
     ) -> Union[Dict[str, Any], None]:
         # Assumes scheduler has its own venv that it can safely launch executables from.
         command = ('source ~/run_daemon/venv/bin/activate; ' 
-                   f'python -m experiment_suite.scheduler.remote_executables.{remote_exec}' + ' '.join(args))
+                   f'python -m experiment_suite.scheduler.remote_executables.{remote_exec} ' + ' '.join(args))
         all_run_data = dict()
         for addr, client in self._machine_clients.items():
             if not addr_filter(addr):
@@ -169,8 +170,8 @@ class RunScheduler:
             run.data_dir,
             run.experiment_base_dir,
             run.venv_name,
-            run.xid,
-            run.run_num,
+            str(run.xid),
+            str(run.run_num),
             run.pythonpath,
             run.experiment_file,
             package_arg(run.experiment_arg_string),

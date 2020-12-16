@@ -1,4 +1,4 @@
-import libtmux
+import pickle
 import os
 import subprocess
 from typing import List
@@ -74,18 +74,6 @@ class RunWrapper:
             f.write(sched_utils.get_hostname())
         os.mkdir(os.path.join(run_dir, 'stream_data'))
 
-    def _get_or_create_tmux_window(self):
-        server = libtmux.Server()
-        session = server.find_where({'session_name': str(self._xid)})
-        if session is None:
-            raise Exception(f'Could not find session.')
-        window_name = f'({self._run_num})'
-        windows = session.list_windows()
-        for window in windows:
-            if window.name == window_name:
-                return window
-        return session.new_window(attach=False, window_name=window_name)
-
     def _run_experiment(self, run_path: str):
         venv_path = os.path.join(self._experiment_base_dir, self._venv_name)
         venv_command = f'source {venv_path}/bin/activate'
@@ -131,6 +119,7 @@ if __name__ == '__main__':
         experiment_arg_string=sys.argv[8],
         experiment_environ_vars=sys.argv[9],
     )
+    print(pickle.dumps({}, 0).decode())
 
 
 
