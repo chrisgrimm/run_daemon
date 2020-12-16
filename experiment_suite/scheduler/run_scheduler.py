@@ -115,7 +115,6 @@ class RunScheduler:
             if not wait_for_finish:
                 continue
             out = stdout.read()
-            print(out)
             # TODO this is where you left off. trying to figure out how to load the data
             # from the remote / local executables.
             client_data: Dict[str, Any] = pickle.loads(out)
