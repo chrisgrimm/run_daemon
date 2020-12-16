@@ -29,7 +29,11 @@ class ParamikoClient(ClientWrapper):
 class LocalClient(ClientWrapper):
 
     def exec_command(self, command: str) -> Tuple[IO, IO, IO]:
-        p = subprocess.Popen(command, shell=True)
+        p = subprocess.Popen(command,
+                             shell=True,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
         return p.stdin, p.stdout, p.stderr
 
 
