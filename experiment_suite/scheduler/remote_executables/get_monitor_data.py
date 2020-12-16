@@ -7,4 +7,5 @@ if __name__ == '__main__':
         gpu_monitor.GPUMonitor()
     ])
     data = monitor.get_data()
-    print(pickle.dumps(data, 0).decode())
+    print(pickle.dumps(data))
+    # print(pickle.dumps(data, 0).decode())
