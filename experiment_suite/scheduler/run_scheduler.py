@@ -114,7 +114,7 @@ class RunScheduler:
             _, stdout, _ = client.exec_command(command)
             if not wait_for_finish:
                 continue
-            out: str = stdout.read()
+            out = str(stdout.read())
             client_data: Dict[str, Any] = pickle.loads(out.encode('ascii'))
             all_run_data[addr] = client_data
         if not wait_for_finish:
