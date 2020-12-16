@@ -112,7 +112,7 @@ def build_run_file(
 
     sweep = sweep.copy()
     sweep.add_enumeration('run_idx', lambda i: i)
-    sweep.add_enumeration('data_path', lambda i: os.path.join(shared_data_dir, str(i)))
+    sweep.add_enumeration('data_path', lambda i: os.path.join(experiment_data_dir, str(i)))
 
     runs = []
     for kwargs in sweep:

@@ -2,7 +2,7 @@ dict(
     experiment_params=dict(
         pythonpath='.',
         experiment_file='test_run.py',
-        experiment_base_dir='scheduler/',
+        experiment_base_dir='~/run_daemon/',
         shared_data_dir='/shared/home/crgrimm/',
 
         venv_name='venv',

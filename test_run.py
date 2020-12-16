@@ -7,6 +7,7 @@ def run_experiment(
         run_idx: int,
         to_add: int,
 ):
+
     manager = StreamManager(data_path)
 
     for i in range(10):
