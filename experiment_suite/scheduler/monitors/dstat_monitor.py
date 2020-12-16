@@ -29,8 +29,8 @@ class DStatMonitor(monitor.Monitor):
             raise Exception(f'Unable to parse "{x}" as numeric.')
 
     def _process_output(self, out: str) -> Tuple[Mapping[str, float], Mapping[str, float]]:
-        lines = out.split('\n')
-        cpu_mem_header, header, values = lines
+        lines = out.split('\\n')
+        cpu_mem_header, header, values, _ = lines
         cpu_headers, mem_headers = [self._process_row(x) for x in header.split('|')]
         cpu_values, mem_values = [self._process_row(x) for x in values.split('|')]
         cpu_values = [self._to_numeric(x) for x in cpu_values]
@@ -43,7 +43,7 @@ class DStatMonitor(monitor.Monitor):
         process = subprocess.Popen(['dstat --noupdate -cm 1 0'],
                                    shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = process.communicate()
-        cpu_data, mem_data = self._process_output(out)
+        cpu_data, mem_data = self._process_output(str(out))
         return {
             'idle_cpu': cpu_data['idl'],
             'free_mem': mem_data['free'],

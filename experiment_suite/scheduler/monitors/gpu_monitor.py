@@ -6,7 +6,10 @@ import nvgpu
 class GPUMonitor(monitor.Monitor):
 
     def get_data(self) -> Mapping[str, float]:
-        info = nvgpu.gpu_info()
+        try:
+            info = nvgpu.gpu_info()
+        except FileNotFoundError:
+            return {}
         data = dict()
         M = 1024 ** 2
         for entry in info:
