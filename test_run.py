@@ -1,5 +1,5 @@
 import time
-from experiment_suite.scheduler.streaming_data import StreamManager
+from experiment_suite.experiment_utils.manager import Manager
 from experiment_suite.experiment_utils import hyperparams
 
 def run_experiment(
@@ -8,7 +8,7 @@ def run_experiment(
         to_add: int,
 ):
 
-    manager = StreamManager(data_path)
+    manager = Manager(data_path)
 
     for i in range(10):
         time.sleep(5)

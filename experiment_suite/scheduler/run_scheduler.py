@@ -8,6 +8,7 @@ import re
 import os
 import sys
 import subprocess
+import argparse
 
 from experiment_suite.scheduler import run_file_utils
 
@@ -36,8 +37,6 @@ class LocalClient(ClientWrapper):
                              stderr=subprocess.PIPE,
                              executable='/bin/bash')
         return p.stdin, p.stdout, p.stderr
-
-
 
 
 class RunScheduler:
@@ -191,12 +190,13 @@ class RunScheduler:
         while run is not None:
             ready_opt = self._find_ready_machine(run)
             if ready_opt is None:
-                print('No Ready Machines... waiting.')
+                print('No ready machines... waiting.')
                 time.sleep(wait_time)
             else:
                 (addr, gpu) = ready_opt
                 self._launch_run(addr, run, gpu)
                 run_file_utils.pop(self._run_file)
+                print(f'Launched on {addr}.')
                 time.sleep(wait_time)
                 run = run_file_utils.peek(self._run_file)
 
@@ -205,10 +205,3 @@ if __name__ == '__main__':
     run_file = sys.argv[1]
     sched = RunScheduler(run_file)
     sched.run()
-
-
-
-
-
-
-

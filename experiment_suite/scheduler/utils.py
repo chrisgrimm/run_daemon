@@ -3,6 +3,7 @@ from contextlib import closing
 from dataclasses import dataclass
 from typing import Optional
 import os
+import paramiko
 
 
 @dataclass
