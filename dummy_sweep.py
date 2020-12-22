@@ -2,9 +2,9 @@ dict(
     experiment_params=dict(
         pythonpath='.',
         experiment_file='test_run.py',
-        experiment_base_dir='~/run_daemon/',
+        experiments_dir='~/run_daemon/',
         shared_data_dir='/shared/home/crgrimm/',
-
+        github_ssh_link='git@github.com:chrisgrimm/scheduler.git',
         venv_name='venv',
         username='crgrimm',
 

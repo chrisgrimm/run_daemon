@@ -84,7 +84,7 @@ def kwargs_to_str(kwargs: Kwargs) -> str:
 def build_run_file(
         sweep: Sweep,
         machine_addresses: List[str],
-        experiment_base_dir: str,
+        experiments_dir: str,
         shared_data_dir: str,
         venv_name: str,
         username: str,
@@ -92,15 +92,17 @@ def build_run_file(
         required_gpu_ram: Optional[int],
         pythonpath: str,
         experiment_file: str,
+        github_ssh_link: str,
 ) -> str:
     xid = int(time.time())
     run_file_data = {
         'machine_addresses': machine_addresses,
-        'experiment_base_dir': experiment_base_dir,
+        'experiments_dir': experiments_dir,
         'data_dir': shared_data_dir,
         'venv_name': venv_name,
         'username': username,
         'xid': xid,
+        'github_ssh_link': github_ssh_link,
     }
     # set up data directory for experiment.
     experiment_data_dir = os.path.join(shared_data_dir, str(xid))
@@ -120,7 +122,6 @@ def build_run_file(
             required_ram=required_ram,
             required_gpu_ram=required_gpu_ram,
             data_dir=shared_data_dir,
-            experiment_base_dir=experiment_base_dir,
             venv_name=venv_name,
             xid=xid,
             run_num=kwargs['run_idx'],
@@ -156,7 +157,8 @@ def build_run_file_from_sweep_file(
         required_ram=p['required_ram'],
         required_gpu_ram=p['required_gpu_ram'],
         pythonpath=p['pythonpath'],
-        experiment_file=p['experiment_file']
+        experiment_file=p['experiment_file'],
+        github_ssh_link=p['github_ssh_link'],
     )
 
 if __name__ == '__main__':

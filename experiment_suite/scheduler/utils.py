@@ -11,7 +11,6 @@ class Run:
     required_ram: int
     required_gpu_ram: Optional[int]
     data_dir: str
-    experiment_base_dir: str
     venv_name: str
     xid: int
     run_num: int

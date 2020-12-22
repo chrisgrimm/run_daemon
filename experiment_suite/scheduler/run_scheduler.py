@@ -12,6 +12,7 @@ import argparse
 
 from experiment_suite.scheduler import run_file_utils
 
+
 class ClientWrapper:
 
     def exec_command(self, command: str) -> Tuple[IO, IO, IO]:
@@ -50,10 +51,11 @@ class RunScheduler:
         self._run_file = run_file
         self._xid = run_file_data['xid']
         self._machine_addresses = run_file_data['machine_addresses']
-        self._experiment_base_dir = run_file_data['experiment_base_dir']
+        self._github_ssh_link = run_file_data['github_ssh_link']
         self._data_dir = run_file_data['data_dir']
         self._venv_name = run_file_data['venv_name']
         self._username = run_file_data['username']
+        self._experiments_dir = run_file_data['experiments_dir']
 
         self._blocking_machines = set()
         self._current_machine = self._machine_addresses[0]
@@ -156,9 +158,20 @@ class RunScheduler:
     def _launch_run(
             self,
             addr: str,
+            experiments_dir: str,
             run: Run,
             gpu: Optional[int]
     ) -> None:
+        data = self._execute_across_machines(
+            'create_experiment',
+            experiments_dir,
+            str(run.xid),
+            str(run.run_num),
+            self._github_ssh_link,
+            addr_filter=lambda x: x == addr
+        )
+        experiment_base_dir: str = data[addr]['experiment_dir']
+
         cuda_env_var = '' if gpu is None else f'CUDA_VISIBLE_DEVICES={gpu}'
         jax_safe_mem_var = 'XLA_PYTHON_CLIENT_PREALLOCATE=false'
         def package_arg(x: str) -> str:
@@ -167,7 +180,7 @@ class RunScheduler:
         environ_vars = run.experiment_environ_vars + f' {cuda_env_var}' + f' {jax_safe_mem_var}'
         exec_args = [
             run.data_dir,
-            run.experiment_base_dir,
+            experiment_base_dir,
             run.venv_name,
             str(run.xid),
             str(run.run_num),
@@ -194,11 +207,15 @@ class RunScheduler:
                 time.sleep(wait_time)
             else:
                 (addr, gpu) = ready_opt
-                self._launch_run(addr, run, gpu)
+                self._launch_run(addr, self._experiments_dir, run, gpu)
                 run_file_utils.pop(self._run_file)
                 print(f'Launched on {addr}.')
                 time.sleep(wait_time)
                 run = run_file_utils.peek(self._run_file)
+
+    def update_scheduler(self) -> None:
+        self._execute_across_machines('update_scheduler')
+
 
 
 if __name__ == '__main__':
