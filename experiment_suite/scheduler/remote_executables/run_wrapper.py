@@ -4,6 +4,7 @@ import subprocess
 from typing import List
 import sys
 from experiment_suite.scheduler import utils as sched_utils
+import shutil
 
 '''
 ./data_dir
@@ -107,6 +108,7 @@ class RunWrapper:
                 stdout.close()
             if stderr is not None:
                 stderr.close()
+            shutil.rmtree(self._experiment_base_dir)
 
 
 
