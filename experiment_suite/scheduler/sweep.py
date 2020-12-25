@@ -150,7 +150,7 @@ def build_run_file_from_sweep_file(
     return build_run_file(
         sweep,
         machine_addresses=p['machine_addresses'],
-        experiment_base_dir=p['experiment_base_dir'],
+        experiments_dir=p['experiments_dir'],
         shared_data_dir=p['shared_data_dir'],
         venv_name=p['venv_name'],
         username=p['username'],

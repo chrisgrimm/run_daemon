@@ -1,4 +1,4 @@
-from typing import Dict, Any, Set, Tuple, Optional, Callable, Union, IO
+from typing import Dict, Any, Set, Tuple, Optional, Callable, Union, IO, Iterable, List
 from experiment_suite.scheduler.utils import Run
 import paramiko
 import itertools
@@ -21,7 +21,16 @@ class ClientWrapper:
 
 class ParamikoClient(ClientWrapper):
 
-    def __init__(self, client: paramiko.SSHClient):
+    def __init__(
+            self,
+            user: str,
+            machine_address: str
+    ):
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(hostname=machine_address,
+                       username=user)
         self._client = client
 
     def exec_command(self, command: str) -> Tuple[IO, IO, IO]:
@@ -38,6 +47,28 @@ class LocalClient(ClientWrapper):
                              stderr=subprocess.PIPE,
                              executable='/bin/bash')
         return p.stdin, p.stdout, p.stderr
+
+
+def _execute_across_machines(
+        remote_exec: str,
+        args: List[str],
+        machines: Iterable[Tuple[str, ClientWrapper]],
+        wait_for_finish: bool = True
+) -> Union[Dict[str, Any], None]:
+    # Assumes scheduler has its own venv that it can safely launch executables from.
+    command = ('source ~/scheduler/venv/bin/activate; ' 
+               f'python -m experiment_suite.scheduler.remote_executables.{remote_exec} ' + ' '.join(args))
+    all_run_data = dict()
+    for addr, client in machines:
+        _, stdout, _ = client.exec_command(command)
+        if not wait_for_finish:
+            continue
+        out = stdout.read()
+        client_data: Dict[str, Any] = pickle.loads(out)
+        all_run_data[addr] = client_data
+    if not wait_for_finish:
+        return None
+    return all_run_data
 
 
 class RunScheduler:
@@ -67,16 +98,13 @@ class RunScheduler:
         if self._is_own_address(machine_address):
             client = LocalClient()
         else:
-            client = paramiko.SSHClient()
-            client.load_system_host_keys()
-            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(hostname=machine_address,
-                           username=self._username)
-            client = ParamikoClient(client)
+            client = ParamikoClient(self._username, machine_address)
         return client
 
     def _get_blocking_machines(self) -> Set[str]:
-        run_data = self._execute_across_machines('get_xid_info', self._data_dir, str(self._xid))
+        run_data = _execute_across_machines('get_xid_info',
+                                            args=[self._data_dir, str(self._xid)],
+                                            machines=self._machine_clients.items())
         blocking_machines = set()
         for _, machine_runs_data in run_data.items():
             for run_num, run_data in machine_runs_data.items():
@@ -99,32 +127,6 @@ class RunScheduler:
             own_machine_name = f.read().strip()
         return own_machine_name == machine_name
 
-    def _execute_across_machines(
-            self,
-            remote_exec: str,
-            *args: str,
-            addr_filter: Callable[[str], bool] = lambda addr: True,
-            wait_for_finish: bool = True
-    ) -> Union[Dict[str, Any], None]:
-        # Assumes scheduler has its own venv that it can safely launch executables from.
-        command = ('source ~/run_daemon/venv/bin/activate; ' 
-                   f'python -m experiment_suite.scheduler.remote_executables.{remote_exec} ' + ' '.join(args))
-        all_run_data = dict()
-        for addr, client in self._machine_clients.items():
-            if not addr_filter(addr):
-                continue
-            _, stdout, _ = client.exec_command(command)
-            if not wait_for_finish:
-                continue
-            out = stdout.read()
-            # TODO this is where you left off. trying to figure out how to load the data
-            # from the remote / local executables.
-            client_data: Dict[str, Any] = pickle.loads(out)
-            all_run_data[addr] = client_data
-        if not wait_for_finish:
-            return None
-        return all_run_data
-
     def _place_on_gpu(self, addr: str, monitor_data: Dict[str, Any], required_gpu_ram: int) -> int:
         resources = monitor_data[addr]
         for key in resources:
@@ -135,7 +137,9 @@ class RunScheduler:
         return -1
 
     def _find_ready_machine(self, run: Run) -> Optional[Tuple[str, Optional[int]]]:
-        monitor_data = self._execute_across_machines('get_monitor_data')
+        monitor_data = _execute_across_machines('get_monitor_data',
+                                                args=[],
+                                                machines=self._machine_clients.items())
         blocking_machines = self._get_blocking_machines()
 
         # find a machine that can fit the run
@@ -162,13 +166,10 @@ class RunScheduler:
             run: Run,
             gpu: Optional[int]
     ) -> None:
-        data = self._execute_across_machines(
+        data = _execute_across_machines(
             'create_experiment',
-            experiments_dir,
-            str(run.xid),
-            str(run.run_num),
-            self._github_ssh_link,
-            addr_filter=lambda x: x == addr
+            args=[experiments_dir, str(run.xid), str(run.run_num), self._github_ssh_link],
+            machines=[(addr, self._machine_clients[addr])]
         )
         experiment_base_dir: str = data[addr]['experiment_dir']
 
@@ -189,10 +190,10 @@ class RunScheduler:
             package_arg(run.experiment_arg_string),
             package_arg(environ_vars),
         ]
-        self._execute_across_machines(
+        _execute_across_machines(
             'run_wrapper',
-            *exec_args,
-            addr_filter=lambda x: x == addr,
+            args=exec_args,
+            machines=[(addr, self._machine_clients[addr])],
             wait_for_finish=False
         )
 
@@ -213,12 +214,20 @@ class RunScheduler:
                 time.sleep(wait_time)
                 run = run_file_utils.peek(self._run_file)
 
-    def update_scheduler(self) -> None:
-        self._execute_across_machines('update_scheduler')
 
 
 
 if __name__ == '__main__':
-    run_file = sys.argv[1]
-    sched = RunScheduler(run_file)
-    sched.run()
+    mode = sys.argv[1]
+    if mode not in ['update', 'schedule']:
+        raise Exception(f'Mode {mode} not expected. Must be either "update" or "schedule".')
+    run_file = sys.argv[2]
+    if mode == 'update':
+        _execute_across_machines('update_scheduler',
+                                 args=[],
+                                 machines=[('local', LocalClient())],
+                                 wait_for_finish=True
+                                 )
+    else:
+        sched = RunScheduler(run_file)
+        sched.run()
