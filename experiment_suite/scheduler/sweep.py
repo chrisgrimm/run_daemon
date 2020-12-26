@@ -84,11 +84,12 @@ def kwargs_to_str(kwargs: Kwargs) -> str:
 def build_run_file(
         tmp_sweep_path: str,
         sweep: Sweep,
-        machine_addresses: List[str],
+        user_plus_machines: List[str],
+        #machine_addresses: List[str],
         experiments_dir: str,
         shared_data_dir: str,
         venv_name: str,
-        username: str,
+        #username: str,
         required_ram: int,
         required_gpu_ram: Optional[int],
         pythonpath: str,
@@ -97,11 +98,12 @@ def build_run_file(
 ) -> str:
     xid = int(time.time())
     run_file_data = {
-        'machine_addresses': machine_addresses,
+        'user_plus_machines': user_plus_machines,
+        #'machine_addresses': machine_addresses,
         'experiments_dir': experiments_dir,
         'data_dir': shared_data_dir,
         'venv_name': venv_name,
-        'username': username,
+        #'username': username,
         'xid': xid,
         'github_ssh_link': github_ssh_link,
     }
@@ -140,8 +142,13 @@ def build_run_file(
 
 
 def build_run_file_from_sweep_file(
-        sweep_file_path: str
+        sweep_file_path: str,
+        machine_file_path: str,
 ) -> str:
+    with open(machine_file_path, 'r') as f:
+        user_plus_machines = f.readlines()
+    user_plus_machines = [upm for upm in user_plus_machines
+                          if upm]
     with open(sweep_file_path, 'r') as f:
         txt = f.read()
     experiment_data = eval(txt)
@@ -152,11 +159,12 @@ def build_run_file_from_sweep_file(
     return build_run_file(
         sweep_file_path,
         sweep,
-        machine_addresses=p['machine_addresses'],
+        #machine_addresses=p['machine_addresses'],
         experiments_dir=p['experiments_dir'],
         shared_data_dir=p['shared_data_dir'],
         venv_name=p['venv_name'],
-        username=p['username'],
+        user_plus_machines=user_plus_machines,
+        #username=p['username'],
         required_ram=p['required_ram'],
         required_gpu_ram=p['required_gpu_ram'],
         pythonpath=p['pythonpath'],

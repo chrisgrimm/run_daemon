@@ -83,24 +83,21 @@ class RunScheduler:
             run_file_data = pickle.load(f)
         self._run_file = run_file
         self._xid = run_file_data['xid']
-        self._machine_addresses = run_file_data['machine_addresses']
+        self._user_plus_machines = run_file_data['user_plus_machines']
         self._github_ssh_link = run_file_data['github_ssh_link']
         self._data_dir = run_file_data['data_dir']
         self._venv_name = run_file_data['venv_name']
-        self._username = run_file_data['username']
         self._experiments_dir = run_file_data['experiments_dir']
-
         self._blocking_machines = set()
-        self._current_machine = self._machine_addresses[0]
-        self._machine_clients = {addr: self._connect_to_machine(addr)
-                                 for addr in self._machine_addresses}
-        self._machine_cycle = itertools.cycle(self._machine_addresses)
+        self._machine_clients = {upm.split('@')[1]: self._connect_to_machine(upm)
+                                 for upm in self._user_plus_machines}
 
-    def _connect_to_machine(self, machine_address: str) -> ClientWrapper:
+    def _connect_to_machine(self, user_plus_machine: str) -> ClientWrapper:
+        user, machine_address = user_plus_machine.split('@')
         if self._is_own_address(machine_address):
             client = LocalClient()
         else:
-            client = ParamikoClient(self._username, machine_address)
+            client = ParamikoClient(user, machine_address)
         return client
 
     def _get_blocking_machines(self) -> Set[str]:

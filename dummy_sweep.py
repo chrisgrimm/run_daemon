@@ -6,14 +6,8 @@ dict(
         shared_data_dir='/shared/home/crgrimm/',
         github_ssh_link='git@github.com:chrisgrimm/scheduler.git',
         venv_name='venv',
-        username='crgrimm',
-
         required_ram=5*(1024**3),
         required_gpu_ram=None,
-
-        machine_addresses=[
-            'rldl7.eecs.umich.edu',
-        ]
     ),
 
     sweep=[

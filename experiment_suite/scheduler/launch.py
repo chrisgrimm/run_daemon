@@ -3,10 +3,13 @@ import os
 import re
 import tempfile
 from enum import Enum
-from typing import Tuple, List
+from typing import Tuple, List, Union
+
+from typing.io import TextIO
+
 from experiment_suite.scheduler import run_scheduler
 from experiment_suite import const
-
+import io
 
 class ArgType(Enum):
     PARSER = 0
@@ -54,12 +57,15 @@ def launch_tmux_named_session_with_command(
     client.exec_command(f'tmux -d -s "{session_name}" {command}')
 
 
-def move_sweep_file_to_client(
-        sweep_file_path: str,
+def move_file_to_client(
+        sweep_file_or_path: Union[str, io.TextIOBase],
         dest_path: str,
 ) -> None:
-    with open(sweep_file_path, 'r') as f:
-        sweep_file_contents = f.read()
+    if isinstance(sweep_file_or_path, io.TextIOBase):
+        sweep_file_contents = sweep_file_or_path.read()
+    else:
+        with open(sweep_file_or_path, 'r') as f:
+            sweep_file_contents = f.read()
     escaped_sweep_contents = sweep_file_contents.replace('"', r'\"')
     client.exec_command(f'echo "{escaped_sweep_contents}" > {dest_path}')
 
@@ -92,10 +98,12 @@ if __name__ == '__main__':
     # load clients
     addrs_and_clients = []
     client_lookup = dict()
+    user_plus_addrs = []
     for user, addr in zip(users, machine_addresses):
         try:
             client = run_scheduler.ParamikoClient(user, addr, timeout=10)
             addrs_and_clients.append((addr, client))
+            user_plus_addrs.append(f'{user}@{addr}')
             client_lookup[addr] = client
         except TimeoutError:
             pass
@@ -115,7 +123,9 @@ if __name__ == '__main__':
 
     temp_name = tempfile.gettempprefix()
     # move the sweep file onto the machine in a temporary location.
-    move_sweep_file_to_client(args.sweep_file, f'/tmp/sweep_{temp_name}.py')
+    move_file_to_client(args.sweep_file, f'/tmp/sweep_{temp_name}.py')
+    machine_string = '\n'.join(user_plus_addrs)
+    move_file_to_client(io.StringIO(machine_string), f'/tmp/machines_{temp_name}')
 
     # execute the sweep_file --> run_file conversion remotely
     out = run_scheduler.execute_across_machines('sweep_file_to_run_file',
@@ -130,9 +140,3 @@ if __name__ == '__main__':
         f'python3.8 -m experiment_suite.scheduler.run_scheduler schedule {run_file}')
 
     launch_tmux_named_session_with_command(selected_client, f"launcher-{xid}", command)
-
-
-
-
-
-
