@@ -24,13 +24,15 @@ class ParamikoClient(ClientWrapper):
     def __init__(
             self,
             user: str,
-            machine_address: str
+            machine_address: str,
+            timeout: int = 10
     ):
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(hostname=machine_address,
-                       username=user)
+                       username=user,
+                       timeout=timeout)
         self._client = client
 
     def exec_command(self, command: str) -> Tuple[IO, IO, IO]:
@@ -49,7 +51,7 @@ class LocalClient(ClientWrapper):
         return p.stdin, p.stdout, p.stderr
 
 
-def _execute_across_machines(
+def execute_across_machines(
         remote_exec: str,
         args: List[str],
         machines: Iterable[Tuple[str, ClientWrapper]],
@@ -102,9 +104,9 @@ class RunScheduler:
         return client
 
     def _get_blocking_machines(self) -> Set[str]:
-        run_data = _execute_across_machines('get_xid_info',
-                                            args=[self._data_dir, str(self._xid)],
-                                            machines=self._machine_clients.items())
+        run_data = execute_across_machines('get_xid_info',
+                                           args=[self._data_dir, str(self._xid)],
+                                           machines=self._machine_clients.items())
         blocking_machines = set()
         for _, machine_runs_data in run_data.items():
             for run_num, run_data in machine_runs_data.items():
@@ -137,9 +139,9 @@ class RunScheduler:
         return -1
 
     def _find_ready_machine(self, run: Run) -> Optional[Tuple[str, Optional[int]]]:
-        monitor_data = _execute_across_machines('get_monitor_data',
-                                                args=[],
-                                                machines=self._machine_clients.items())
+        monitor_data = execute_across_machines('get_monitor_data',
+                                               args=[],
+                                               machines=self._machine_clients.items())
         blocking_machines = self._get_blocking_machines()
 
         # find a machine that can fit the run
@@ -166,7 +168,7 @@ class RunScheduler:
             run: Run,
             gpu: Optional[int]
     ) -> None:
-        data = _execute_across_machines(
+        data = execute_across_machines(
             'create_experiment',
             args=[experiments_dir, str(run.xid), str(run.run_num), self._github_ssh_link],
             machines=[(addr, self._machine_clients[addr])]
@@ -190,7 +192,7 @@ class RunScheduler:
             package_arg(run.experiment_arg_string),
             package_arg(environ_vars),
         ]
-        _execute_across_machines(
+        execute_across_machines(
             'run_wrapper',
             args=exec_args,
             machines=[(addr, self._machine_clients[addr])],
@@ -223,11 +225,11 @@ if __name__ == '__main__':
         raise Exception(f'Mode {mode} not expected. Must be either "update" or "schedule".')
     run_file = sys.argv[2]
     if mode == 'update':
-        _execute_across_machines('update_scheduler',
-                                 args=[],
-                                 machines=[('local', LocalClient())],
-                                 wait_for_finish=True
-                                 )
+        execute_across_machines('update_scheduler',
+                                args=[],
+                                machines=[('local', LocalClient())],
+                                wait_for_finish=True
+                                )
     else:
         sched = RunScheduler(run_file)
         sched.run()

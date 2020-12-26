@@ -5,6 +5,8 @@ from typing import Tuple
 import pickle
 from experiment_suite.scheduler import sweep as sweep_lib
 from experiment_suite.scheduler import run_scheduler
+from experiment_suite import const
+import paramiko
 
 
 class ArgType(Enum):
@@ -26,6 +28,10 @@ def get_from_parser_or_environ(
                             f'then {environ_key} environment variable must be defined.')
     else:
         return ArgType.PARSER, args.__dict__[parser_key]
+
+# TODO left off here.
+def launch(client: run_scheduler.ClientWrapper):
+    client.exec_command('tmux -S {')
 
 
 if __name__ == '__main__':
@@ -59,10 +65,30 @@ if __name__ == '__main__':
     # (3) initialize the scheduler (ideally inside of a tmux instance for visibility)
 
     # load clients
-    clients = []
+    addrs_and_clients = []
+    client_lookup = dict()
     for user, addr in zip(users, machine_addresses):
-        clients.append(run_scheduler.ParamikoClient(user, addr))
-    # figure out which machine to use as a client (available resources)
+        try:
+            client = run_scheduler.ParamikoClient(user, addr, timeout=10)
+            addrs_and_clients.append((addr, client))
+            client_lookup[addr] = client
+        except TimeoutError:
+            pass
+    data = run_scheduler.execute_across_machines('get_monitor_data',
+                                                 args=[],
+                                                 machines=addrs_and_clients)
+    selected_client = None
+    for addr, monitor_data in data.items():
+        insufficient_mem = monitor_data['free_mem'] < 10 * const.GB
+        insufficient_cpu = monitor_data['idle_cpu'] < 10
+        if insufficient_cpu or insufficient_mem:
+            selected_client = client_lookup[addr]
+    if selected_client is None:
+        raise Exception('Could not find client with sufficient resources amoung:\n' +
+                        '\n'.join([f'\t[{addr}]' for addr in machine_addresses]))
+
+
+
     # spin up a tmux instance on that machine and start the client in it.
     sweep_lib.build_run_file_from_sweep_file(args.sweep_file)
 

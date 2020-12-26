@@ -116,10 +116,10 @@ if __name__ == '__main__':
         # 2,
         3,
         4,
-        # 5,
+        #5,
         #6,
         7,
-        # 8,
+        8,
         9,
         10,
         11,
@@ -138,6 +138,10 @@ if __name__ == '__main__':
     with open(os.path.join(os.path.expanduser('~'), '.ssh/id_rsa.pub'), 'r') as f:
         local_public_key = f.read().strip()
     all_public_keys.append(local_public_key)
+    other_keys = [
+        'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCs3JX0TsyL2EjVCJC2qU5FWk77umOUD/ZD5u2hf4BDaZ3g3sZhpirPGO2uTgLA5N/X7xBj7AR8P9Kv++OcZJ+yfF0VwBS4rkVwok2jdnoNeLO8Zo6R6RD5bVKlCqFO0sKmyy2ClKfYapnDisP0Rdfn+fnZD5iehb9IYo53tTt9+cajb2SHcxN4OQsryUBvXJKRZKgPucxBNwaTS601IIU8oBEVSJnJcW5UCZCmdPlY7UAssdKDsO+KytuR6Xjt2epMdR1jJW7h6FiE27Y09GzV0UC7NOHH299F7PES8Rca6/JokGgXWNANPVPn6NPPI9MwFw7lsgap1MgJZ2Vdj6DZOEtaRjwbc6/b5Hlx0gTh3TczMpUUqslnCCT83fsYoVNDG2KeJkkPQFIZ9Jix5JO2lID0LlU6FT5hP5iHo/vsAKwx7/kIrOjwufJ23m7IMur9jF2y4eaLbeF4TOz97MMb5p9II1A4U/jN4276cdokcTGW58ffATggZQqtrBUBB8c= chris@ChristohersMBP2'
+    ]
+    all_public_keys.extend(other_keys)
     print(len(all_public_keys))
     for ncp in all_name_client_pairs:
         add_nonduplicate_keys(ncp, all_public_keys)

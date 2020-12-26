@@ -45,6 +45,6 @@ class DStatMonitor(monitor.Monitor):
         (out, err) = process.communicate()
         cpu_data, mem_data = self._process_output(str(out))
         return {
-            'idle_cpu': cpu_data['idl'],
+            'idle_cpu': cpu_data['idl'], # number between
             'free_mem': mem_data['free'],
         }
