@@ -24,3 +24,4 @@ def get_hostname() -> str:
     with open('/etc/hostname', 'r') as f:
         return f.read().strip()
 
+

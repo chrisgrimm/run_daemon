@@ -82,6 +82,7 @@ def kwargs_to_str(kwargs: Kwargs) -> str:
 
 
 def build_run_file(
+        tmp_sweep_path: str,
         sweep: Sweep,
         machine_addresses: List[str],
         experiments_dir: str,
@@ -109,7 +110,8 @@ def build_run_file(
     if os.path.isdir(experiment_data_dir):
         raise Exception(f'Experiment directory already exists.')
     os.mkdir(experiment_data_dir)
-
+    # move the temporary sweep file
+    os.rename(tmp_sweep_path, os.path.join(experiment_data_dir, 'sweep.py'))
     run_file_path = os.path.join(experiment_data_dir, 'run_file.pickle')
 
     sweep = sweep.copy()
@@ -134,7 +136,7 @@ def build_run_file(
     run_file_data['runs'] = runs
     with open(run_file_path, 'wb') as f:
         pickle.dump(run_file_data, f)
-    return run_file_path
+    return experiment_data_dir
 
 
 def build_run_file_from_sweep_file(
@@ -148,6 +150,7 @@ def build_run_file_from_sweep_file(
     for sweep_command in experiment_data['sweep']:
         eval("sweep." + sweep_command)
     return build_run_file(
+        sweep_file_path,
         sweep,
         machine_addresses=p['machine_addresses'],
         experiments_dir=p['experiments_dir'],
@@ -160,7 +163,3 @@ def build_run_file_from_sweep_file(
         experiment_file=p['experiment_file'],
         github_ssh_link=p['github_ssh_link'],
     )
-
-if __name__ == '__main__':
-    run_file_path = build_run_file_from_sweep_file(sys.argv[1])
-    print(run_file_path)

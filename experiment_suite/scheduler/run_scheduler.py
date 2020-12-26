@@ -177,9 +177,11 @@ class RunScheduler:
 
         cuda_env_var = '' if gpu is None else f'CUDA_VISIBLE_DEVICES={gpu}'
         jax_safe_mem_var = 'XLA_PYTHON_CLIENT_PREALLOCATE=false'
+
         def package_arg(x: str) -> str:
             x = x.replace('"', '\\"')
             return f'"{x}"'
+
         environ_vars = run.experiment_environ_vars + f' {cuda_env_var}' + f' {jax_safe_mem_var}'
         exec_args = [
             run.data_dir,
@@ -217,13 +219,10 @@ class RunScheduler:
                 run = run_file_utils.peek(self._run_file)
 
 
-
-
-if __name__ == '__main__':
+def run_as_script():
     mode = sys.argv[1]
     if mode not in ['update', 'schedule']:
         raise Exception(f'Mode {mode} not expected. Must be either "update" or "schedule".')
-    run_file = sys.argv[2]
     if mode == 'update':
         execute_across_machines('update_scheduler',
                                 args=[],
@@ -231,5 +230,10 @@ if __name__ == '__main__':
                                 wait_for_finish=True
                                 )
     else:
+        run_file = sys.argv[2]
         sched = RunScheduler(run_file)
         sched.run()
+
+
+if __name__ == '__main__':
+    run_as_script()
